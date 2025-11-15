@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native"; // Thêm Alert
 import React from "react";
 import { Habit } from "@/types/habit";
 import { useRouter } from "expo-router";
@@ -7,15 +7,35 @@ import { Button, Card, useTheme } from "react-native-paper";
 type Props = {
   data: Habit;
   onToggle: (id: number, currentStatus: boolean) => void;
-  onEdit: (habit: Habit) => void; // Prop mới: Truyền Habit data khi nhấn Edit
+  onEdit: (habit: Habit) => void;
+  onDelete: (id: number) => void; // Prop mới: Handler xóa
 };
 
-const HabitItem = ({ data, onToggle, onEdit }: Props) => {
+const HabitItem = ({ data, onToggle, onEdit, onDelete }: Props) => {
   const router = useRouter();
   const theme = useTheme();
 
   const handleToggle = () => {
     onToggle(data.id, data.done_today);
+  };
+
+  // Hàm xử lý xóa có xác nhận
+  const handleDelete = () => {
+    Alert.alert(
+      "Xác nhận xóa",
+      `Bạn có chắc chắn muốn xóa thói quen "${data.title}"?`,
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: () => onDelete(data.id), // Gọi handler xóa khi xác nhận
+        },
+      ]
+    );
   };
 
   const cardStyle = data.done_today
@@ -55,11 +75,17 @@ const HabitItem = ({ data, onToggle, onEdit }: Props) => {
             </Text>
           </Card.Content>
           <Card.Actions>
-            {/* Gắn sự kiện onPress để gọi onEdit */}
             <Button mode="contained" onPress={() => onEdit(data)}>
               Edit
             </Button>
-            <Button mode="contained">Delete</Button>
+            {/* Gắn sự kiện Xóa */}
+            <Button
+              mode="contained"
+              onPress={handleDelete}
+              buttonColor={theme.colors.error}
+            >
+              Delete
+            </Button>
           </Card.Actions>
         </Card>
       </View>

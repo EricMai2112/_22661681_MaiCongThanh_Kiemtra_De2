@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { Habit } from "@/types/habit";
-import { getAllHabits, toggleHabitDoneToday } from "@/db/db";
+import { deleteHabit, getAllHabits, toggleHabitDoneToday } from "@/db/db";
 import HabitItem from "@/components/HabitItem";
 import AddHabitModal from "@/components/AddHabitModal";
 import EditHabitModal from "@/components/EditHabitModal";
@@ -97,6 +97,16 @@ export default function Page() {
     fetchData(); // Tải lại dữ liệu sau khi thêm thành công
   };
 
+  // Hàm mới: Xử lý xóa thói quen (Câu 7)
+  const handleDeleteHabit = async (id: number) => {
+    try {
+      await deleteHabit(db, id);
+      handleRefresh(); // Tải lại dữ liệu sau khi xóa
+    } catch (error) {
+      console.error("Failed to delete habit:", error);
+    }
+  };
+
   // 3. Hiển thị danh sách
   return (
     <View className="flex flex-1">
@@ -109,6 +119,7 @@ export default function Page() {
             data={item}
             onToggle={handleToggleHabit}
             onEdit={handleEditHabit}
+            onDelete={handleDeleteHabit}
           />
         )}
         contentContainerStyle={{ flexGrow: 1 }}

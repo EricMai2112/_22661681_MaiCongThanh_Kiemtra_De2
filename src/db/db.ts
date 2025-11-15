@@ -108,3 +108,7 @@ export const updateHabit = async (
     [title, description || null, id]
   );
 };
+
+export const deleteHabit = async (db: SQLiteDatabase, id: number) => {
+  await db.runAsync(`DELETE FROM habits WHERE id = ?`, [id]);
+};
