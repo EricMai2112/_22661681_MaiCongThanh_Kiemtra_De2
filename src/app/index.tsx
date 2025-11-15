@@ -1,5 +1,5 @@
 import { Link, useFocusEffect } from "expo-router";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Text,
   View,
@@ -14,6 +14,7 @@ import { deleteHabit, getAllHabits, toggleHabitDoneToday } from "@/db/db";
 import HabitItem from "@/components/HabitItem";
 import AddHabitModal from "@/components/AddHabitModal";
 import EditHabitModal from "@/components/EditHabitModal";
+import { TextInput } from "react-native-paper";
 
 export default function Page() {
   const db = useSQLiteContext();
@@ -21,6 +22,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [searchText, setSearchText] = useState("");
 
   // Hàm lấy dữ liệu
   const fetchData = useCallback(async () => {
@@ -42,6 +44,20 @@ export default function Page() {
       fetchData();
     }, [fetchData])
   );
+
+  const filteredHabits = useMemo(() => {
+    if (!searchText) {
+      return habits; // Nếu không có từ khóa, trả về toàn bộ danh sách
+    }
+
+    const lowerCaseSearch = searchText.toLowerCase();
+
+    // Lọc theo title
+    return habits.filter((habit) =>
+      habit.title.toLowerCase().includes(lowerCaseSearch)
+    );
+    // Danh sách chỉ tính toán lại khi habits hoặc searchText thay đổi
+  }, [habits, searchText]);
 
   // Handler mở Modal chỉnh sửa
   const handleEditHabit = (habit: Habit) => {
@@ -111,8 +127,19 @@ export default function Page() {
   return (
     <View className="flex flex-1">
       <Text className="text-2xl font-bold p-4">Danh sách Thói quen</Text>
+
+      {/* Thêm TextInput Search */}
+      <TextInput
+        label="Tìm kiếm thói quen..."
+        value={searchText}
+        onChangeText={setSearchText}
+        mode="outlined"
+        className="mx-4 mb-4"
+        right={<TextInput.Icon icon="magnify" />}
+      />
+
       <FlatList
-        data={habits}
+        data={filteredHabits} // SỬ DỤNG filteredHabits
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <HabitItem
@@ -123,7 +150,18 @@ export default function Page() {
           />
         )}
         contentContainerStyle={{ flexGrow: 1 }}
+        // Hiển thị thông báo khi không có kết quả tìm kiếm
+        ListEmptyComponent={() => (
+          <View className="flex-1 justify-center items-center p-8">
+            {searchText ? (
+              <Text className="text-lg text-gray-500">
+                Không tìm thấy thói quen nào khớp với "{searchText}".
+              </Text>
+            ) : null}
+          </View>
+        )}
       />
+
       {/* Nút "+" để mở Modal */}
       <TouchableOpacity
         style={styles.fab}
