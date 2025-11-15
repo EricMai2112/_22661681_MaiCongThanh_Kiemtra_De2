@@ -13,12 +13,14 @@ import { Habit } from "@/types/habit";
 import { getAllHabits, toggleHabitDoneToday } from "@/db/db";
 import HabitItem from "@/components/HabitItem";
 import AddHabitModal from "@/components/AddHabitModal";
+import EditHabitModal from "@/components/EditHabitModal";
 
 export default function Page() {
   const db = useSQLiteContext();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
   // Hàm lấy dữ liệu
   const fetchData = useCallback(async () => {
@@ -40,6 +42,17 @@ export default function Page() {
       fetchData();
     }, [fetchData])
   );
+
+  // Handler mở Modal chỉnh sửa
+  const handleEditHabit = (habit: Habit) => {
+    setEditingHabit(habit);
+  };
+
+  // Handler đóng Modal chỉnh sửa và Refresh
+  const handleCloseEditModal = () => {
+    setEditingHabit(null);
+    handleRefresh();
+  };
 
   // Hàm refresh list (dùng cho cả AddHabitModal và Toggle)
   const handleRefresh = () => {
@@ -92,7 +105,11 @@ export default function Page() {
         data={habits}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <HabitItem data={item} onToggle={handleToggleHabit} />
+          <HabitItem
+            data={item}
+            onToggle={handleToggleHabit}
+            onEdit={handleEditHabit}
+          />
         )}
         contentContainerStyle={{ flexGrow: 1 }}
       />
@@ -110,6 +127,14 @@ export default function Page() {
         onDismiss={() => setIsModalVisible(false)}
         onHabitAdded={handleRefresh} // Pass callback
       />
+      {/* Modal chỉnh sửa thói quen mới */}
+      {editingHabit && (
+        <EditHabitModal
+          habit={editingHabit}
+          onDismiss={handleCloseEditModal}
+          onSave={handleCloseEditModal} // onSave gọi handleCloseEditModal để đóng và refresh
+        />
+      )}
     </View>
   );
 }

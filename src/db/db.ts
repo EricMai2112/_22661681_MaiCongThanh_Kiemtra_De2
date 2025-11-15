@@ -91,3 +91,20 @@ export const toggleHabitDoneToday = async (
     id,
   ]);
 };
+
+// Hàm mới: Cập nhật thông tin thói quen (Câu 6)
+export const updateHabit = async (
+  db: SQLiteDatabase,
+  id: number,
+  title: string,
+  description: string | undefined
+) => {
+  await db.runAsync(
+    `
+    UPDATE habits 
+    SET title = ?, description = ? 
+    WHERE id = ?
+    `,
+    [title, description || null, id]
+  );
+};
