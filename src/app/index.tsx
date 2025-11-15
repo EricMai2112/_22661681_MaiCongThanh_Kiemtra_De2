@@ -7,14 +7,23 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { Habit } from "@/types/habit";
-import { deleteHabit, getAllHabits, toggleHabitDoneToday } from "@/db/db";
+import {
+  deleteHabit,
+  getAllHabits,
+  insertNewHabits,
+  toggleHabitDoneToday,
+} from "@/db/db";
 import HabitItem from "@/components/HabitItem";
 import AddHabitModal from "@/components/AddHabitModal";
 import EditHabitModal from "@/components/EditHabitModal";
-import { TextInput } from "react-native-paper";
+import { Button, TextInput } from "react-native-paper";
+
+// Mock API URL (Thay thế bằng API thật nếu có)
+const API_URL = "https://67e227a797fc65f53534c8a2.mockapi.io/apiTodo/habits";
 
 export default function Page() {
   const db = useSQLiteContext();
@@ -23,6 +32,9 @@ export default function Page() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [searchText, setSearchText] = useState("");
+  // State mới cho việc Import
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Hàm lấy dữ liệu
   const fetchData = useCallback(async () => {
@@ -123,10 +135,73 @@ export default function Page() {
     }
   };
 
+  // Hàm mới: Xử lý Import từ API (Câu 9)
+  const handleImportHabits = async () => {
+    setIsImporting(true);
+    setImportError(null);
+
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) {
+        throw new Error(`Lỗi server: ${response.statusText}`);
+      }
+      const apiData = await response.json();
+
+      if (!Array.isArray(apiData)) {
+        throw new Error("Dữ liệu API không hợp lệ (không phải là mảng).");
+      }
+
+      // 1. Map dữ liệu từ API sang định dạng Habit
+      const newHabitsToInsert = apiData.map((item: any) => ({
+        // Ánh xạ name/title sang title, is_active sang active
+        title: item.name || "Thói quen không tên",
+        description: item.description || "",
+        active: item.is_active === true,
+      }));
+
+      // 2. Chèn vào DB (có kiểm tra trùng lặp)
+      const result = await insertNewHabits(db, newHabitsToInsert);
+
+      // 3. Xử lý sau khi thành công
+      if (result.success) {
+        Alert.alert(
+          "Thành công",
+          `Đã nhập ${result.count} thói quen mới từ API.`
+        );
+        handleRefresh(); // Cập nhật danh sách
+      }
+    } catch (error) {
+      console.error("Import API failed:", error);
+      const errorMessage =
+        (error as Error).message || "Không thể kết nối đến API.";
+      setImportError(errorMessage);
+      Alert.alert("Lỗi Import", `Không thể nhập thói quen: ${errorMessage}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // 3. Hiển thị danh sách
   return (
     <View className="flex flex-1">
       <Text className="text-2xl font-bold p-4">Danh sách Thói quen</Text>
+      {/* Thêm nút Import và trạng thái */}
+      <View className="mx-4 mb-4 flex-row items-center justify-between">
+        <Button
+          mode="contained"
+          onPress={handleImportHabits}
+          loading={isImporting}
+          disabled={isImporting || loading}
+        >
+          {isImporting ? "Đang Import..." : "Import từ API"}
+        </Button>
+        {/* Hiển thị lỗi nếu có */}
+        {importError && (
+          <Text className="flex-1 ml-4" style={{ color: "red", fontSize: 12 }}>
+            Lỗi: {importError}
+          </Text>
+        )}
+      </View>
 
       {/* Thêm TextInput Search */}
       <TextInput

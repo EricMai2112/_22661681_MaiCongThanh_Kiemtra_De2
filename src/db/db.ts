@@ -112,3 +112,54 @@ export const updateHabit = async (
 export const deleteHabit = async (db: SQLiteDatabase, id: number) => {
   await db.runAsync(`DELETE FROM habits WHERE id = ?`, [id]);
 };
+
+// Hàm mới: Chèn danh sách thói quen (có kiểm tra trùng lặp title)
+export const insertNewHabits = async (
+  db: SQLiteDatabase,
+  // ĐÃ SỬA: Thêm 'created_at' vào Omit
+  newHabits: Omit<Habit, "id" | "done_today" | "created_at">[]
+) => {
+  try {
+    // 1. Lấy tất cả title hiện có (chuyển về chữ thường để so sánh không phân biệt chữ hoa/thường)
+    const existingTitlesResult = await db.getAllAsync<{ title: string }>(
+      "SELECT title FROM habits;"
+    );
+    const existingTitles = new Set(
+      existingTitlesResult.map((r) => r.title.toLowerCase())
+    );
+
+    // 2. Lọc ra các thói quen cần chèn (chưa tồn tại)
+    const habitsToInsert = newHabits.filter((habit) => {
+      // Bỏ qua nếu title đã tồn tại
+      return !existingTitles.has(habit.title.toLowerCase());
+    });
+
+    if (habitsToInsert.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    const now = Date.now();
+
+    // 3. Chuẩn bị và thực hiện các lệnh INSERT khối (sử dụng Promise.all để song song hóa)
+    const insertStatements = habitsToInsert.map((habit, index) => {
+      // Dùng created_at riêng biệt để giữ thứ tự nếu cần
+      return db.runAsync(
+        // Giá trị created_at được gán ở đây, nên không cần nó trong kiểu dữ liệu đầu vào
+        `INSERT INTO habits (title, description, active, done_today, created_at) VALUES (?, ?, ?, 0, ?)`,
+        [
+          habit.title,
+          habit.description || null,
+          habit.active ? 1 : 0,
+          now + index,
+        ]
+      );
+    });
+
+    await Promise.all(insertStatements);
+
+    return { success: true, count: habitsToInsert.length };
+  } catch (error) {
+    console.error("Error inserting new habits:", error);
+    throw new Error("Không thể chèn thói quen mới vào database.");
+  }
+};
