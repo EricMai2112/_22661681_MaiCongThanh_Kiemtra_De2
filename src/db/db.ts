@@ -1,3 +1,4 @@
+import { Habit } from "@/types/habit";
 import { SQLiteDatabase } from "expo-sqlite";
 
 export const initTable = async (db: SQLiteDatabase) => {
@@ -33,5 +34,24 @@ export const initTable = async (db: SQLiteDatabase) => {
     }
   } catch (error) {
     console.error("Error during table initialization or seeding:", error);
+  }
+};
+
+// Hàm mới: Lấy danh sách thói quen
+export const getAllHabits = async (db: SQLiteDatabase): Promise<Habit[]> => {
+  try {
+    // Truy vấn tất cả thói quen đang hoạt động
+    const allHabits = await db.getAllAsync<Habit>(
+      "SELECT * FROM habits WHERE active = 1 ORDER BY created_at DESC;"
+    );
+    // Chuyển đổi giá trị INTEGER (0/1) thành BOOLEAN
+    return allHabits.map((habit) => ({
+      ...habit,
+      active: habit.active === true,
+      done_today: habit.done_today === true,
+    }));
+  } catch (error) {
+    console.error("Error fetching all habits:", error);
+    return [];
   }
 };
