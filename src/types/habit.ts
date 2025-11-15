@@ -2,7 +2,7 @@ export type Habit = {
   id: number;
   title: string;
   description: string;
-  active: Boolean;
-  done_today: Boolean;
+  active: boolean;
+  done_today: boolean;
   created_at: number;
 };

@@ -1,6 +1,9 @@
 import { Habit } from "@/types/habit";
 import { SQLiteDatabase } from "expo-sqlite";
-
+interface RawHabit extends Omit<Habit, "active" | "done_today"> {
+  active: number;
+  done_today: number;
+}
 export const initTable = async (db: SQLiteDatabase) => {
   await db.execAsync(`
         CREATE TABLE IF NOT EXISTS habits(
@@ -40,15 +43,18 @@ export const initTable = async (db: SQLiteDatabase) => {
 // Hàm mới: Lấy danh sách thói quen
 export const getAllHabits = async (db: SQLiteDatabase): Promise<Habit[]> => {
   try {
-    // Truy vấn tất cả thói quen đang hoạt động
-    const allHabits = await db.getAllAsync<Habit>(
+    // Truy vấn tất cả thói quen đang hoạt động, sử dụng kiểu RawHabit
+    // Điều này giúp TypeScript hiểu rằng habit.done_today là number
+    const allHabits = await db.getAllAsync<RawHabit>(
       "SELECT * FROM habits WHERE active = 1 ORDER BY created_at DESC;"
     );
+
     // Chuyển đổi giá trị INTEGER (0/1) thành BOOLEAN
+    // Phép so sánh (number === number, trả về boolean) giờ đây là hợp lệ
     return allHabits.map((habit) => ({
       ...habit,
-      active: habit.active === true,
-      done_today: habit.done_today === true,
+      active: habit.active === 1,
+      done_today: habit.done_today === 1,
     }));
   } catch (error) {
     console.error("Error fetching all habits:", error);
@@ -70,4 +76,18 @@ export const insertHabit = async (
     `,
     [title, description || null, now]
   );
+};
+
+// Hàm mới: Chuyển đổi trạng thái done_today (Câu 5)
+export const toggleHabitDoneToday = async (
+  db: SQLiteDatabase,
+  id: number,
+  currentStatus: boolean
+) => {
+  // Nếu đang done (true), chuyển về 0 (false). Ngược lại, chuyển về 1 (true).
+  const newStatus = currentStatus ? 0 : 1;
+  await db.runAsync(`UPDATE habits SET done_today = ? WHERE id = ?`, [
+    newStatus,
+    id,
+  ]);
 };

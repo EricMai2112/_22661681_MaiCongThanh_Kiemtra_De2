@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { Habit } from "@/types/habit";
-import { getAllHabits } from "@/db/db";
+import { getAllHabits, toggleHabitDoneToday } from "@/db/db";
 import HabitItem from "@/components/HabitItem";
 import AddHabitModal from "@/components/AddHabitModal";
 
@@ -40,6 +40,20 @@ export default function Page() {
       fetchData();
     }, [fetchData])
   );
+
+  // Hàm refresh list (dùng cho cả AddHabitModal và Toggle)
+  const handleRefresh = () => {
+    fetchData();
+  };
+  // Hàm mới: Xử lý toggle và refresh (Câu 5)
+  const handleToggleHabit = async (id: number, currentStatus: boolean) => {
+    try {
+      await toggleHabitDoneToday(db, id, currentStatus);
+      handleRefresh(); // Tải lại dữ liệu sau khi cập nhật
+    } catch (error) {
+      console.error("Failed to toggle habit status:", error);
+    }
+  };
 
   // 1. Trạng thái Loading
   if (loading) {
@@ -77,7 +91,9 @@ export default function Page() {
       <FlatList
         data={habits}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <HabitItem data={item} />}
+        renderItem={({ item }) => (
+          <HabitItem data={item} onToggle={handleToggleHabit} />
+        )}
         contentContainerStyle={{ flexGrow: 1 }}
       />
       {/* Nút "+" để mở Modal */}
@@ -92,7 +108,7 @@ export default function Page() {
       <AddHabitModal
         visible={isModalVisible}
         onDismiss={() => setIsModalVisible(false)}
-        onHabitAdded={handleHabitAdded} // Pass callback
+        onHabitAdded={handleRefresh} // Pass callback
       />
     </View>
   );
