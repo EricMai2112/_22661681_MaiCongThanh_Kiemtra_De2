@@ -15,5 +15,29 @@
     "expo-sqlite"
   ],
   "name": "22661681_MaiCongThanh",
-  "slug": "22661681_MaiCongThanh"
+  "slug": "22661681_MaiCongThanh",
+  "extra": {
+    "router": {
+      "origin": "https://n"
+    },
+    "eas": {
+      "projectId": "d3fbd7f4-cc3f-46ba-829a-e4138eb8c7c2"
+    }
+  },
+  "expo": {
+    "android": {
+      "package": "com.maicongthanh.habittra"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9ee21cce-cb9a-4c5f-811f-797ef4d25ee4"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.maicongthanh.habittra",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
 }
