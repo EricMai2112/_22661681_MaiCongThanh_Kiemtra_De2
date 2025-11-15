@@ -1,15 +1,24 @@
 import { Link, useFocusEffect } from "expo-router";
 import React, { useState, useCallback } from "react";
-import { Text, View, FlatList, ActivityIndicator } from "react-native";
+import {
+  Text,
+  View,
+  FlatList,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { Habit } from "@/types/habit";
 import { getAllHabits } from "@/db/db";
 import HabitItem from "@/components/HabitItem";
+import AddHabitModal from "@/components/AddHabitModal";
 
 export default function Page() {
   const db = useSQLiteContext();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // Hàm lấy dữ liệu
   const fetchData = useCallback(async () => {
@@ -57,6 +66,10 @@ export default function Page() {
     );
   }
 
+  const handleHabitAdded = () => {
+    fetchData(); // Tải lại dữ liệu sau khi thêm thành công
+  };
+
   // 3. Hiển thị danh sách
   return (
     <View className="flex flex-1">
@@ -67,6 +80,45 @@ export default function Page() {
         renderItem={({ item }) => <HabitItem data={item} />}
         contentContainerStyle={{ flexGrow: 1 }}
       />
+      {/* Nút "+" để mở Modal */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setIsModalVisible(true)}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+
+      {/* Modal thêm thói quen mới */}
+      <AddHabitModal
+        visible={isModalVisible}
+        onDismiss={() => setIsModalVisible(false)}
+        onHabitAdded={handleHabitAdded} // Pass callback
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fab: {
+    position: "absolute",
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#3b82f6", // blue-500
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  fabText: {
+    color: "white",
+    fontSize: 30,
+    lineHeight: 30,
+  },
+});

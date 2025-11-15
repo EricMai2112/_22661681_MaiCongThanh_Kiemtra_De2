@@ -55,3 +55,19 @@ export const getAllHabits = async (db: SQLiteDatabase): Promise<Habit[]> => {
     return [];
   }
 };
+
+// Hàm mới: Thêm thói quen mới vào database
+export const insertHabit = async (
+  db: SQLiteDatabase,
+  title: string,
+  description: string | undefined
+) => {
+  const now = Date.now();
+  await db.runAsync(
+    `
+    INSERT INTO habits (title, description, active, done_today, created_at)
+    VALUES (?, ?, 1, 0, ?)
+    `,
+    [title, description || null, now]
+  );
+};
